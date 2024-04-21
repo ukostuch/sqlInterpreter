@@ -92,7 +92,6 @@ def p_where_clause(p):
                     | WHERE ID IN LEFT_PARENTHESIS select_statement RIGHT_PARENTHESIS
                     | WHERE ID NOT IN LEFT_PARENTHESIS select_statement RIGHT_PARENTHESIS
                     | WHERE ID LIKE STRING
-                    
                     | WHERE EXISTS LEFT_PARENTHESIS select_statement 
                     | WHERE NOT EXISTS LEFT_PARENTHESIS select_statement
                     '''
@@ -170,6 +169,7 @@ def p_expression(p):
                   | AVG LEFT_PARENTHESIS expression_list RIGHT_PARENTHESIS
                   | MIN LEFT_PARENTHESIS expression_list RIGHT_PARENTHESIS
                   | MAX LEFT_PARENTHESIS expression_list RIGHT_PARENTHESIS
+                  | SUM LEFT_PARENTHESIS expression_list RIGHT_PARENTHESIS
                   | conditional_expr'''
 
     p[0] = p[1:]
@@ -192,6 +192,7 @@ def p_value_list(p):
 def p_value(p):
     '''value : NUMBER
              | STRING
+             | ID
              | NULL'''
     p[0] = p[1:]
 
@@ -292,6 +293,7 @@ def p_join_type(p):
                  | LEFT JOIN
                  | RIGHT JOIN
                  | FULL JOIN
+                 | OUTER JOIN
                  | JOIN'''
     p[0] = p[1:]
 
@@ -336,11 +338,16 @@ parser = yacc.yacc()
 #result = parser.parse("select datepart(year, '2017-12-03') from a;")
 #result = parser.parse("select productid from q where q>0;")
 #result = parser.parse("select id from a intersect select id from b;")
-result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
+#result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
 #result = parser.parse("SELECT x from a where a between a and abs(-6);")
 #result = parser.parse("SELECT COALESCE(NULL, NULL, NULL, 'W3Schools.com', NULL, 'Example.com') from a;")
 #result = parser.parse("SELECT CASE WHEN Quantity > 30 THEN x WHEN Quantity = 30 THEN 'The quantity is 30' END FROM OrderDetails;")
 #result = parser.parse("CREATE FUNCTION a (arg1 int) returns int language plpgsql as $$ declare x int; begin 'aaa' end; $$;")
 #result = parser.parse("create schema employee;")
 #result = parser.parse("select a from b;")
+
+#result = parser.parse("DELETE FROM table_name WHERE x>y;")
+result = parser.parse("SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;")
+#result = parser.parse("ALTER TABLE table_name ADD COLUMN column_name int;")
+
 print(result)
