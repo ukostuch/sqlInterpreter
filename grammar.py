@@ -20,23 +20,7 @@ def p_statement(p):
 
 def p_select_statement(p):
     '''
-    select_statement : SELECT select_list FROM table_expr join_expr where_clause group_by_clause having_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause order_by_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause having_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr join_expr where_clause
-                     | SELECT select_list FROM table_expr join_expr
-                     | SELECT select_list FROM table_expr where_clause group_by_clause having_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr where_clause order_by_clause
-                     | SELECT select_list FROM table_expr where_clause group_by_clause having_clause
-                     | SELECT select_list FROM table_expr where_clause group_by_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr where_clause group_by_clause
-                     | SELECT select_list FROM table_expr where_clause order_by_clause limit_clause
-                     | SELECT select_list FROM table_expr where_clause
-                     | SELECT select_list FROM table_expr
-                     | SELECT dist_list select_list FROM table_expr join_expr where_clause group_by_clause having_clause order_by_clause limit_clause
+    select_statement : SELECT dist_list select_list FROM table_expr join_expr where_clause group_by_clause having_clause order_by_clause limit_clause
                      | SELECT dist_list select_list FROM table_expr join_expr where_clause order_by_clause
                      | SELECT dist_list select_list FROM table_expr join_expr where_clause group_by_clause having_clause
                      | SELECT dist_list select_list FROM table_expr join_expr where_clause group_by_clause order_by_clause limit_clause
@@ -52,6 +36,22 @@ def p_select_statement(p):
                      | SELECT dist_list select_list FROM table_expr where_clause order_by_clause limit_clause
                      | SELECT dist_list select_list FROM table_expr where_clause
                      | SELECT dist_list select_list FROM table_expr
+                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause having_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause order_by_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause having_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause group_by_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr join_expr where_clause
+                     | SELECT select_list FROM table_expr join_expr
+                     | SELECT select_list FROM table_expr where_clause group_by_clause having_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr where_clause order_by_clause
+                     | SELECT select_list FROM table_expr where_clause group_by_clause having_clause
+                     | SELECT select_list FROM table_expr where_clause group_by_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr where_clause group_by_clause
+                     | SELECT select_list FROM table_expr where_clause order_by_clause limit_clause
+                     | SELECT select_list FROM table_expr where_clause
+                     | SELECT select_list FROM table_expr
     '''
     p[0] = p[1:]
 
@@ -64,8 +64,7 @@ def p_select_list(p):
 
 
 def p_dist_list(p):
-    '''dist_list : DISTINCT
-                   |  '''
+    '''dist_list : DISTINCT'''
     p[0] = p[1:]      
 
 def p_select_item(p):
@@ -337,17 +336,16 @@ parser = yacc.yacc()
 #result = parser.parse("select a from b where a ~ 'm.*';")
 #result = parser.parse("select datepart(year, '2017-12-03') from a;")
 #result = parser.parse("select productid from q where q>0;")
-#result = parser.parse("select id from a intersect select id from b;")
-#result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
+#result = parser.parse("select distinct id from a intersect select id from b;")
+result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
 #result = parser.parse("SELECT x from a where a between a and abs(-6);")
 #result = parser.parse("SELECT COALESCE(NULL, NULL, NULL, 'W3Schools.com', NULL, 'Example.com') from a;")
 #result = parser.parse("SELECT CASE WHEN Quantity > 30 THEN x WHEN Quantity = 30 THEN 'The quantity is 30' END FROM OrderDetails;")
 #result = parser.parse("CREATE FUNCTION a (arg1 int) returns int language plpgsql as $$ declare x int; begin 'aaa' end; $$;")
 #result = parser.parse("create schema employee;")
-#result = parser.parse("select a from b;")
-
+#result = parser.parse("select distinct a from b;")
 #result = parser.parse("DELETE FROM table_name WHERE x>y;")
-result = parser.parse("SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;")
+#result = parser.parse("SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;")
 #result = parser.parse("ALTER TABLE table_name ADD COLUMN column_name int;")
 
 print(result)
