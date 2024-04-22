@@ -2,7 +2,7 @@ import ply.yacc as yacc
 from my_token import tokens
 
 
-# Define grammar rules
+#reguly gramatyki
 def p_statement(p):
     '''statement : select_statement SEMICOLON
                  | insert_statement
@@ -329,10 +329,10 @@ def p_drop_statement(p):
 def p_error(p):
     print("Syntax error in input!")
 
-# Build the parser
+#budowanie parsera
 parser = yacc.yacc()
 
-# Test the parser
+#przykładowe zapytania:
 #result = parser.parse("select a from b where a ~ 'm.*';")
 #result = parser.parse("select datepart(year, '2017-12-03') from a;")
 #result = parser.parse("select productid from q where q>0;")

@@ -6,6 +6,7 @@ keywords = [
     'select','from', 'where', 'and', 'or','function', 'language', 'float','update', 'elsif', 'begin','declare','returns','dolars','delete', 'group', 'having', 'insert', 'values', 'order', 'by', 'asc', 'desc', 'join', 'left', 'right', 'inner', 'outer', 'on', 'limit', 'distinct', 'union', 'all', 'as', 'case', 'when', 'then', 'else', 'end', 'except', 'intersect', 'sum', 'avg', 'max', 'min', 'count', 'coalesce', 'unique', 'null', 'if', 'create', 'replace', 'abs', 'datepart', 'alter', 'table', 'column', 'drop', 'between', 'database', 'schema', 'exists', 'any', 'in', 'into', 'full','check', 'default', 'primary key', 'foreign key', 'constraint', 'not', 'set', 'add', 'references','int', 'varchar'
 ]
 
+#tokeny
 tokens = (
     'SELECT',
     'FROM',
@@ -23,7 +24,7 @@ tokens = (
     'EQUALS',
     'AND',
     'OR',
-    'FUNCTION',  #
+    'FUNCTION',  
     'REFERENCES',
     'UPDATE',
     'DELETE',
@@ -62,8 +63,8 @@ tokens = (
     'NULL',      
     'IF',        
     'THEN',            
-    'CREATE',     #
-    'REPLACE',    #
+    'CREATE',     
+    'REPLACE',    
     'ABS',        
     'DATEPART',   
     'ALTER',       
@@ -74,16 +75,16 @@ tokens = (
     'BETWEEN',    
     'DATABASE',
     'EXISTS',     
-    'ALL',        #
-    'ANY',        #
+    'ALL',        
+    'ANY',        
     'IN',         
     'INTO',
     'FULL',
     'LIKE',       
     'CHECK',      
     'DEFAULT',    
-    'PRIMARY_KEY', #
-    'FOREIGN_KEY', #
+    'PRIMARY_KEY', 
+    'FOREIGN_KEY', 
     'CONSTRAINT', 
     'STRING',      
     'LESS_THAN',
@@ -93,7 +94,6 @@ tokens = (
     'NOT',
     'SEMICOLON',
     'NEWLINE',
-    #'SPACE',
     'LEFT_PARENTHESIS',
     'RIGHT_PARENTHESIS',
     'PLUS',
@@ -106,6 +106,7 @@ tokens = (
     'VARCHAR'
 )
 
+#definicje tokenow
 t_SELECT = r'select|SELECT'
 t_FROM = r'from|FROM'
 t_WHERE = r'where|WHERE'
@@ -238,20 +239,13 @@ def t_ID(t):
 
 lexer = lex.lex()
 
-# Przykładowe zapytanie SQL
-sql_query = """
-SELECT id, name
-FROM users
-WHERE id = 1
-AND age > 18
-ORDER BY name ASC
-LIMIT 10 PRIMARY KEY;
-"""
+#przykładowe zapytanie
+sql_query = """SELECT id, name FROM users WHERE id = 1 AND age > 18 ORDER BY name ASC LIMIT 10 PRIMARY KEY;"""
 
-# Analiza leksykalna
+#analiza leksykalna
 lexer.input(sql_query)
 while True:
     tok = lexer.token()
     if not tok:
         break
-    print(tok)
+    #print(tok)
