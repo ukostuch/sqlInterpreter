@@ -204,7 +204,9 @@ t_ADD = r'add|ADD'
 def t_NEWLINE(t):
     r'\n+'
     t.lexer.lineno += t.value.count('\n')
-    return t
+    #return t
+    return ''
+
 
 
 def t_NUMBER(t):

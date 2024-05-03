@@ -4,7 +4,13 @@ from my_token import tokens
 
 #reguly gramatyki
 def p_statement(p):
-    '''statement : select_statement SEMICOLON
+    '''statement : statement2
+                | statement statement2'''
+    p[0] = p[1:]
+
+
+def p_statement2(p):
+    '''statement2 : select_statement SEMICOLON
                  | insert_statement
                  | update_statement
                  | delete_statement
@@ -17,6 +23,8 @@ def p_statement(p):
                  | select_statement EXCEPT select_statement SEMICOLON'''
 
     p[0] = p[1:]
+
+
 
 def p_select_statement(p):
     '''
@@ -337,7 +345,7 @@ parser = yacc.yacc()
 #result = parser.parse("select datepart(year, '2017-12-03') from a;")
 #result = parser.parse("select productid from q where q>0;")
 #result = parser.parse("select distinct id from a intersect select id from b;")
-result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
+#result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);")
 #result = parser.parse("SELECT x from a where a between a and abs(-6);")
 #result = parser.parse("SELECT COALESCE(NULL, NULL, NULL, 'W3Schools.com', NULL, 'Example.com') from a;")
 #result = parser.parse("SELECT CASE WHEN Quantity > 30 THEN x WHEN Quantity = 30 THEN 'The quantity is 30' END FROM OrderDetails;")
@@ -347,5 +355,7 @@ result = parser.parse("SELECT * from customers where a NOT IN (select customerid
 #result = parser.parse("DELETE FROM table_name WHERE x>y;")
 #result = parser.parse("SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;")
 #result = parser.parse("ALTER TABLE table_name ADD COLUMN column_name int;")
+
+result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);\nSELECT * from customers where a NOT IN (select customerid from orders);")
 
 print(result)
