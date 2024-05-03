@@ -73,8 +73,7 @@ tokens = (
     'COLUMN',
     'DROP',       
     'BETWEEN',    
-    'DATABASE',
-    'EXISTS',     
+    'DATABASE',  
     'ALL',        
     'ANY',        
     'IN',         
@@ -176,7 +175,6 @@ t_COLUMN = r'column|COLUMN'
 t_DROP = r'drop|DROP'
 t_BETWEEN = r'between|BETWEEN'
 t_DATABASE = r'database|DATABASE'
-t_EXISTS = r'exists|EXISTS'
 t_ANY = r'any|ANY'
 t_IN = r'in|IN'
 t_INTO = r'into|INTO'

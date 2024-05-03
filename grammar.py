@@ -101,8 +101,6 @@ def p_where_clause(p):
                     | WHERE ID IN LEFT_PARENTHESIS select_statement RIGHT_PARENTHESIS
                     | WHERE ID NOT IN LEFT_PARENTHESIS select_statement RIGHT_PARENTHESIS
                     | WHERE ID LIKE STRING
-                    | WHERE EXISTS LEFT_PARENTHESIS select_statement 
-                    | WHERE NOT EXISTS LEFT_PARENTHESIS select_statement
                     '''
     p[0] = p[1:]
 
@@ -367,6 +365,17 @@ parser = yacc.yacc()
 
 
 
+
+def flatten(lst):
+    flat_list = []
+    for item in lst:
+        if isinstance(item, list):
+            flat_list.extend(flatten(item))
+        else:
+            flat_list.append(item)
+    return flat_list
+
+
 # Funkcja do zapisu danych do pliku
 def save_data_to_file(data):
     with open('database.txt', 'w') as f:
@@ -389,6 +398,8 @@ def execute_select_statement(statement):
     done=False
     left_table = None
     right_table = None
+    table=None
+    result_table= None
 
     i=1
     #data = read_data_from_file()
@@ -413,6 +424,11 @@ def execute_select_statement(statement):
             i+=1
             table_name = statement[i]
             i+=1
+            current_directory = os.getcwd()
+            file_path = os.path.join(current_directory, table_name +'.csv')
+            if not os.path.exists(file_path):
+                return "Bledna nazwa tabeli"
+            table = read_data_from_file(file_path)
     
         if statement[i].lower()=='join':
             print('Jestem w joinie')
@@ -452,7 +468,80 @@ def execute_select_statement(statement):
             
             if(pom==''): left_table = pd.merge(left_table, right_table, left_on = left_column, right_on = right_column)
             else: left_table = pd.merge(left_table, right_table, how=pom,left_on = left_column, right_on = right_column)
+        
+        if statement[i].lower() =='where':
+            logic=[]
+            df_table = []
+            if left_table is not None: table = left_table
+            i+=1
+            i_p = i
+            while(statement[i]!='group' and statement[i]!='order' and statement[i]!=';'):
+                if statement[i]=='and' or statement[i]=='or':
+                    substatement = statement[i_p:i]
+                    logic.append(statement[i])
+                    try:
+                        substatement[2]=float(substatement[2])
+                    except: 
+                        if table[substatement[0]].dtype == 'object':
+                            pass
+                        else:
+                            return "Operacja arytmetyczna na błędnym typie"
+
+                    if substatement[1]=='<':
+                        df_table.append(table[table[substatement[0]]<substatement[2]])
+                    elif substatement[1]=='<=':
+                        df_table.append(table[table[substatement[0]]<=substatement[2]]) 
+                    elif substatement[1]=='>':
+                        df_table.append(table[table[substatement[0]]>substatement[2]]) 
+                    elif substatement[1]=='>=':
+                        df_table.append(table[table[substatement[0]]>=substatement[2]]) 
+                    elif substatement[1]=='=':
+                        df_table.append(table[table[substatement[0]]==substatement[2]])               
+                    i_p =i+1
+                i+=1
+
+            if statement[i]==';':
+                substatement = statement[i_p:i]
+                try:
+                        substatement[2]=float(substatement[2])
+                except: 
+                        if table[substatement[0]].dtype == 'object':
+                            pass
+                        else:
+                            return "Operacja arytmetyczna na błędnym typie"
+                if substatement[1]=='<':
+                    df_table.append(table[table[substatement[0]]<substatement[2]])
+                elif substatement[1]=='<=':
+                    df_table.append(table[table[substatement[0]]<=substatement[2]]) 
+                elif substatement[1]=='>':
+                    df_table.append(table[table[substatement[0]]>int(substatement[2])]) 
+                elif substatement[1]=='>=':
+                    df_table.append(table[table[substatement[0]]>=substatement[2]]) 
+                elif substatement[1]=='=':
+                    df_table.append(table[table[substatement[0]]==substatement[2]])
+
+
+                print(substatement)
+            result_table=df_table[0]
+            count = 1
+            for element in logic:
+                if element.lower() == 'and':
+                    result_table = pd.merge(result_table, df_table[count], how='inner')
+                elif element.lower() == 'or':
+                    result_table = pd.concat([result_table, df_table[count]])    
+                count+=1 
+              
+
+
+
+
         if statement[i]==';':
+            if result_table is not None: 
+                try:
+                    return result_table[column_names]
+                except:
+                    return "Błędne kolumny przy scalaniu"
+
             if left_table is not None: 
                 try:
                     return left_table[column_names]
@@ -577,7 +666,7 @@ def execute_drop_statement(statement):
         return f"Invalid DROP operation."
 
 # Przykładowe zapytania
-select_query = parser.parse("select name, priority from database1 join database2 on database1.id = database2.id join database3 on database2.name = database3.name;")
+select_query = parser.parse("select name, priority from database3 where name = alice;")
 #insert_query = parser.parse("INSERT INTO table (Name, Age) VALUES ('John', 30);")
 #update_query = parser.parse("UPDATE table SET Age = 35 WHERE Name = 'John';")
 #delete_query = parser.parse("DELETE FROM table WHERE Name = 'John';")
@@ -586,14 +675,6 @@ select_query = parser.parse("select name, priority from database1 join database2
 #drop_query = parser.parse("DROP TABLE table;")
 
 
-def flatten(lst):
-    flat_list = []
-    for item in lst:
-        if isinstance(item, list):
-            flat_list.extend(flatten(item))
-        else:
-            flat_list.append(item)
-    return flat_list
 
 select_query = flatten(select_query)
 print(select_query)
