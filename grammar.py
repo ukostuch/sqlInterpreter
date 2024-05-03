@@ -1,5 +1,7 @@
 import ply.yacc as yacc
 from my_token import tokens
+import pandas as pd
+import os
 
 
 #reguly gramatyki
@@ -356,6 +358,260 @@ parser = yacc.yacc()
 #result = parser.parse("SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;")
 #result = parser.parse("ALTER TABLE table_name ADD COLUMN column_name int;")
 
-result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);\nSELECT * from customers where a NOT IN (select customerid from orders);")
+#result = parser.parse("SELECT * from customers where a NOT IN (select customerid from orders);\nSELECT * from customers where a NOT IN (select customerid from orders);")
+#print(result)
 
-print(result)
+
+
+
+
+
+
+# Funkcja do zapisu danych do pliku
+def save_data_to_file(data):
+    with open('database.txt', 'w') as f:
+        for row in data:
+            f.write(','.join([str(value) for value in row.values()]) + '\n')
+
+# Funkcja do odczytu danych z pliku
+def read_data_from_file(path):
+    data = pd.read_csv(path)
+    return data
+
+# Funkcja wykonująca zapytanie SELECT
+def execute_select_statement(statement):
+    distinct=False
+    join = False
+    column_count=0
+    column_names=[]
+    star=False
+    table_name=''
+    done=False
+    left_table = None
+    right_table = None
+
+    i=1
+    #data = read_data_from_file()
+    while i<len(statement):
+        if statement[i].lower() == 'distinct':
+            distinct=True
+            i+=1
+            continue
+        while statement[i].lower()!='from' and done is False:
+            if statement[i] ==',':
+                i+=1
+                continue
+            if statement[i]=='*':
+                star=True
+                i+=1
+                break
+            column_count+=1
+            column_names.append(statement[i].lower())
+            i+=1
+        if statement[i].lower()=='from':
+            done = True
+            i+=1
+            table_name = statement[i]
+            i+=1
+    
+        if statement[i].lower()=='join':
+            print('Jestem w joinie')
+            if left_table is None:
+                current_directory = os.getcwd()
+                file_path = os.path.join(current_directory, table_name +'.csv')
+                if not os.path.exists(file_path):
+                    return "Bledna nazwa tabeli"
+                left_table = read_data_from_file(file_path)
+
+            pom = statement[i-1].lower()
+            if not(pom =='right' or pom =='left' or pom=='outer' or pom =='inner' or pom == 'full'):
+                pom=''
+            i+=1
+            right_table_name = statement[i]
+            current_directory = os.getcwd()
+            file_path = os.path.join(current_directory, right_table_name +'.csv')
+            if not os.path.exists(file_path):
+                return "Bledna nazwa tabeli"
+            right_table = read_data_from_file(file_path)
+
+            i+=4
+            left_column=statement[i]
+            try:
+                left_table[left_column]
+            except:
+               return "Wybranej kolumny nie ma w tabeli"    
+            i+=2
+            if statement[i]!= right_table_name:
+                return "Niekomatybilna nazwa tabeli"  
+            i+=2
+            right_column = statement[i]
+            try:
+                right_table[right_column]
+            except:
+               return "Wybranej kolumny nie ma w tabeli"
+            
+            if(pom==''): left_table = pd.merge(left_table, right_table, left_on = left_column, right_on = right_column)
+            else: left_table = pd.merge(left_table, right_table, how=pom,left_on = left_column, right_on = right_column)
+        if statement[i]==';':
+            if left_table is not None: 
+                try:
+                    return left_table[column_names]
+                except:
+                    return "Błędne kolumny przy scalaniu"
+            
+            current_directory = os.getcwd()
+            file_path = os.path.join(current_directory, table_name +'.csv')
+            print(file_path)
+            if not os.path.exists(file_path):
+                return "Bledna nazwa tabeli"
+            data = read_data_from_file(file_path)
+            print(data.columns.tolist())
+            try:
+               if star is True:
+                   selected_columns = data
+               else:    
+                   selected_columns = data[column_names]
+            except:
+               return "Błędne nazwy kolumn"  
+            return selected_columns
+        i+=1       
+    
+# Funkcja wykonująca zapytanie INSERT
+def execute_insert_statement(statement):
+    columns = statement[5]
+    values = statement[9]
+
+    data = read_data_from_file()
+
+    new_id = len(data) + 1
+    new_record = {'ID': new_id}
+    for i in range(len(columns)):
+        new_record[columns[i]] = values[i]
+
+    data.append(new_record)
+    save_data_to_file(data)
+    return "Inserted successfully."
+
+# Funkcja wykonująca zapytanie UPDATE
+def execute_update_statement(statement):
+    set_list = statement[4]
+    where_clause = statement[5]
+
+    data = read_data_from_file()
+
+    for row in data:
+        if where_clause and row.get(where_clause[2]) == where_clause[4]:
+            for i in range(0, len(set_list), 3):
+                column = set_list[i]
+                new_value = set_list[i+2]
+                row[column] = new_value
+    save_data_to_file(data)
+    return f"Updated successfully."
+
+# Funkcja wykonująca zapytanie DELETE
+def execute_delete_statement(statement):
+    where_clause = statement[3]
+
+    data = read_data_from_file()
+
+    if where_clause:
+        data[:] = [row for row in data if row.get(where_clause[1]) != where_clause[3]]
+    else:
+        data.clear()
+    save_data_to_file(data)
+    return f"Deleted successfully."
+
+# Funkcja wykonująca zapytanie ALTER
+def execute_alter_statement(statement):
+    alter_actions = statement[4]
+
+    data = read_data_from_file()
+
+    for action in alter_actions:
+        if action[1] == 'ADD':
+            # Obsługa dodawania kolumny
+            column_name = action[3]
+            data[:] = [{**row, column_name: None} for row in data]
+        elif action[1] == 'DROP':
+            # Obsługa usuwania kolumny
+            column_name = action[3]
+            for row in data:
+                row.pop(column_name, None)
+    save_data_to_file(data)
+    return f"Altered successfully."
+
+# Funkcja wykonująca zapytanie CREATE
+def execute_create_statement(statement):
+    # Obsługa tworzenia tabeli - tutaj można dodać obsługę tworzenia schematu, funkcji, itp.
+    table_name = statement[3]
+    column_def_list = statement[6]
+
+    data = read_data_from_file()
+
+    # Przygotowanie struktury nowej tabeli
+    new_table_data = []
+    for row in data:
+        new_row = {}
+        for column_def in column_def_list:
+            column_name = column_def[0]
+            new_row[column_name] = None
+        new_table_data.append(new_row)
+
+    # Zapisanie nowej tabeli do pliku
+    save_data_to_file(new_table_data)
+    return f"Table {table_name} created successfully."
+
+# Funkcja wykonująca zapytanie DROP
+def execute_drop_statement(statement):
+    object_type = statement[1]
+    object_name = statement[3]
+
+    if object_type == 'TABLE':
+        # Obsługa usuwania tabeli
+        save_data_to_file([])
+        return f"Table {object_name} dropped successfully."
+    elif object_type == 'COLUMN':
+        # Obsługa usuwania kolumny - można zaimplementować w razie potrzeby
+        pass
+    else:
+        return f"Invalid DROP operation."
+
+# Przykładowe zapytania
+select_query = parser.parse("select name, priority from database1 join database2 on database1.id = database2.id join database3 on database2.name = database3.name;")
+#insert_query = parser.parse("INSERT INTO table (Name, Age) VALUES ('John', 30);")
+#update_query = parser.parse("UPDATE table SET Age = 35 WHERE Name = 'John';")
+#delete_query = parser.parse("DELETE FROM table WHERE Name = 'John';")
+#alter_query = parser.parse("ALTER TABLE table ADD COLUMN new_column INT;")
+#create_query = parser.parse("CREATE TABLE new_table (ID INT, Name VARCHAR);")
+#drop_query = parser.parse("DROP TABLE table;")
+
+
+def flatten(lst):
+    flat_list = []
+    for item in lst:
+        if isinstance(item, list):
+            flat_list.extend(flatten(item))
+        else:
+            flat_list.append(item)
+    return flat_list
+
+select_query = flatten(select_query)
+print(select_query)
+
+# Wykonanie zapytań
+select_result = execute_select_statement(select_query)
+#insert_result = execute_insert_statement(insert_query)
+#update_result = execute_update_statement(update_query)
+#delete_result = execute_delete_statement(delete_query)
+#alter_result = execute_alter_statement(alter_query)
+#create_result = execute_create_statement(create_query)
+#drop_result = execute_drop_statement(drop_query)
+
+# Wyświetlenie wyników
+print(select_result)
+#print("INSERT result:", insert_result)
+#print("UPDATE result:", update_result)
+#print("DELETE result:", delete_result)
+#print("ALTER result:", alter_result)
+#print("CREATE result:", create_result)
+#print("DROP result:", drop_result)
