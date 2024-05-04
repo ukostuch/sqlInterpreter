@@ -240,7 +240,7 @@ def t_ID(t):
 lexer = lex.lex()
 
 #przykładowe zapytanie
-sql_query = """SELECT id, name FROM users WHERE id = 1 AND age > 18 ORDER BY name ASC LIMIT 10 PRIMARY KEY;"""
+sql_query = """SELECT name FROM users;"""
 
 #analiza leksykalna
 lexer.input(sql_query)

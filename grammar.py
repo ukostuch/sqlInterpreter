@@ -400,7 +400,9 @@ def execute_select_statement(statement):
     right_table = None
     table=None
     result_table= None
-
+    columns_to_group = []
+    agg_cols = {}
+    coalesce = {}
     i=1
     #data = read_data_from_file()
     while i<len(statement):
@@ -416,8 +418,22 @@ def execute_select_statement(statement):
                 star=True
                 i+=1
                 break
-            column_count+=1
-            column_names.append(statement[i].lower())
+            if statement[i].lower() == 'avg' or statement[i].lower() == 'min' or statement[i].lower() == 'max' or statement[i].lower() == 'count' or statement[i].lower() == 'sum':
+                i += 2
+                column_count += 1
+                column_names.append(statement[i].lower())
+                agg_cols[statement[i].lower()] = statement[i-2].lower()
+                agg_cols[statement[i].lower()] = statement[i-2].lower()
+                i += 1
+            elif statement[i].lower() == 'coalesce':
+                i += 2
+                column_count += 1
+                column_names.append(statement[i].lower())
+                coalesce[statement[i].lower()] = statement[i+2]
+                i += 3
+            else:
+                column_count+=1
+                column_names.append(statement[i].lower())
             i+=1
         if statement[i].lower()=='from':
             done = True
@@ -431,7 +447,7 @@ def execute_select_statement(statement):
             table = read_data_from_file(file_path)
     
         if statement[i].lower()=='join':
-            print('Jestem w joinie')
+            #print('Jestem w joinie')
             if left_table is None:
                 current_directory = os.getcwd()
                 file_path = os.path.join(current_directory, table_name +'.csv')
@@ -468,7 +484,8 @@ def execute_select_statement(statement):
             
             if(pom==''): left_table = pd.merge(left_table, right_table, left_on = left_column, right_on = right_column)
             else: left_table = pd.merge(left_table, right_table, how=pom,left_on = left_column, right_on = right_column)
-        
+            table = left_table
+
         if statement[i].lower() =='where':
             logic=[]
             df_table = []
@@ -509,19 +526,17 @@ def execute_select_statement(statement):
                             pass
                         else:
                             return "Operacja arytmetyczna na błędnym typie"
-                if substatement[1]=='<':
+                if substatement[1] == '<':
                     df_table.append(table[table[substatement[0]]<substatement[2]])
-                elif substatement[1]=='<=':
+                elif substatement[1] == '<=':
                     df_table.append(table[table[substatement[0]]<=substatement[2]]) 
-                elif substatement[1]=='>':
+                elif substatement[1] == '>':
                     df_table.append(table[table[substatement[0]]>int(substatement[2])]) 
-                elif substatement[1]=='>=':
+                elif substatement[1] == '>=':
                     df_table.append(table[table[substatement[0]]>=substatement[2]]) 
-                elif substatement[1]=='=':
+                elif substatement[1] == '=':
                     df_table.append(table[table[substatement[0]]==substatement[2]])
 
-
-                print(substatement)
             result_table=df_table[0]
             count = 1
             for element in logic:
@@ -529,37 +544,56 @@ def execute_select_statement(statement):
                     result_table = pd.merge(result_table, df_table[count], how='inner')
                 elif element.lower() == 'or':
                     result_table = pd.concat([result_table, df_table[count]])    
-                count+=1 
-              
+                count += 1
+            table = result_table
 
+        if statement[i].lower() == 'group':
+            i += 2
+            while statement[i] != ';' and statement[i].lower() != 'having' and statement[i].lower() != 'order':
+                if statement[i] ==',':
+                    i += 1
+                    continue
+                columns_to_group.append(statement[i])
+                i += 1
+            try:
+                for coln in column_names:
+                    if coln not in columns_to_group and coln not in agg_cols.keys():
+                        return "You cannot group like that"
+                if len(agg_cols) == 0:
+                    table = table.groupby(columns_to_group).first().reset_index()
+                else:
+                    for dicts in agg_cols.keys():
+                        if agg_cols[dicts] == 'avg':
+                            agg_cols[dicts] = 'mean'
+                    table = table.groupby(columns_to_group).agg(agg_cols).reset_index()
+            except:
+                return "You cannot group like that"
 
-
-
-        if statement[i]==';':
-            if result_table is not None: 
-                try:
-                    return result_table[column_names]
-                except:
-                    return "Błędne kolumny przy scalaniu"
-
-            if left_table is not None: 
-                try:
-                    return left_table[column_names]
-                except:
-                    return "Błędne kolumny przy scalaniu"
-            
-            current_directory = os.getcwd()
-            file_path = os.path.join(current_directory, table_name +'.csv')
-            print(file_path)
-            if not os.path.exists(file_path):
-                return "Bledna nazwa tabeli"
-            data = read_data_from_file(file_path)
-            print(data.columns.tolist())
+        if statement[i] == ';':
             try:
                if star is True:
-                   selected_columns = data
-               else:    
-                   selected_columns = data[column_names]
+                   selected_columns = table
+               else:
+                   selected_columns = table[column_names]
+                   if len(column_names) == 1 and len(agg_cols) == 1 and len(columns_to_group) == 0:
+                       if list(agg_cols.values())[0].lower() == 'avg':
+                           selected_columns = selected_columns.mean()
+                       elif list(agg_cols.values())[0].lower() == 'sum':
+                           selected_columns = selected_columns.sum()
+                       elif list(agg_cols.values())[0].lower() == 'count':
+                           selected_columns = selected_columns.count()
+                       elif list(agg_cols.values())[0].lower() == 'min':
+                           selected_columns = selected_columns.min()
+                       elif list(agg_cols.values())[0].lower() == 'max':
+                           selected_columns = selected_columns.max()
+                   elif len(columns_to_group) == 0 and (len(agg_cols) == 1 and len(agg_cols) != len(column_names)):
+                       return "Nie mozna uzyc funkcji agregacyjnej gdy nie używamy grupowania po kolumnach z SELECT"
+                   if len(coalesce) != 0:
+                       for col in coalesce.keys():
+                           if coalesce[col].startswith('\'') or coalesce[col].startswith('\"'):
+                               coalesce[col] = coalesce[col][1:len(coalesce[col])-1]
+                           selected_columns.loc[:, col] = selected_columns[col].fillna(coalesce[col])
+
             except:
                return "Błędne nazwy kolumn"  
             return selected_columns
@@ -666,7 +700,8 @@ def execute_drop_statement(statement):
         return f"Invalid DROP operation."
 
 # Przykładowe zapytania
-select_query = parser.parse("select name, priority from database3 where name = alice;")
+select_query = parser.parse("select name,avg(priority) from database3 group by name;")
+#select_query = parser.parse("select coalesce(name, 'name') from database3 left join database2 on database3.name = database2.name where comment_id > 2;")
 #insert_query = parser.parse("INSERT INTO table (Name, Age) VALUES ('John', 30);")
 #update_query = parser.parse("UPDATE table SET Age = 35 WHERE Name = 'John';")
 #delete_query = parser.parse("DELETE FROM table WHERE Name = 'John';")
