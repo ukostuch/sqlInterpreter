@@ -390,20 +390,18 @@ def read_data_from_file(path):
 # Funkcja wykonująca zapytanie SELECT
 def execute_select_statement(statement):
     distinct=False
-    join = False
     column_count=0
     column_names=[]
     star=False
     table_name=''
     done=False
     left_table = None
-    right_table = None
     table=None
-    result_table= None
     columns_to_group = []
     agg_cols = {}
     coalesce = {}
     order = None
+    limit = 0
     i=1
     #data = read_data_from_file()
     while i<len(statement):
@@ -693,6 +691,14 @@ def execute_select_statement(statement):
                     except:
                         return "Błędna kolumna w klauzuli order by"
 
+        if statement[i] == 'limit' or  statement[i] == 'LIMIT':
+            i += 1
+            if statement[i] <= 0:
+                return "Błąd w klazuli limit"
+            else:
+                limit = statement[i]
+            i += 1
+
         if statement[i] == ';':
             try:
                if star is True:
@@ -721,6 +727,8 @@ def execute_select_statement(statement):
                         selected_columns = selected_columns.sort_values(by=order)
                    if distinct:
                        selected_columns = selected_columns.drop_duplicates()
+                   if limit != 0:
+                       selected_columns = selected_columns.iloc[:limit]
             except:
                return "Błędne nazwy kolumn"  
             return selected_columns
@@ -827,6 +835,7 @@ def execute_drop_statement(statement):
         return f"Invalid DROP operation."
 
 # Przykładowe zapytania
+select_query = parser.parse("select comment_id, name from database3 order by name limit 2;")
 #select_query = parser.parse("select comment_id, name from database3 order by name;")
 #select_query = parser.parse("select name, count(comment_id) from database3 group by name having name = alice;")
 #select_query = parser.parse("select coalesce(name, 'name') from database3 left join database2 on database3.name = database2.name where comment_id > 2;")
