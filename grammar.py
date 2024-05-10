@@ -403,6 +403,7 @@ def execute_select_statement(statement):
     columns_to_group = []
     agg_cols = {}
     coalesce = {}
+    order = None
     i=1
     #data = read_data_from_file()
     while i<len(statement):
@@ -517,7 +518,7 @@ def execute_select_statement(statement):
                     i_p =i+1
                 i+=1
 
-            if statement[i]==';':
+            if statement[i]==';' or statement[i] == 'order':
                 substatement = statement[i_p:i]
                 try:
                         substatement[2]=float(substatement[2])
@@ -569,6 +570,129 @@ def execute_select_statement(statement):
             except:
                 return "You cannot group like that"
 
+        if statement[i].lower() == 'having':
+            i += 1
+            logic = []
+            df_table = []
+            i_p = i
+            while statement[i] != ';' and statement[i] != 'order' and statement[i] != 'ORDER':
+                if not isinstance(statement[i],int) and not isinstance(statement[i],float) and (statement[i].lower() == 'count' or statement[i].lower() == 'avg' or statement[i].lower() == 'min' or statement[i].lower() == 'max' or statement[i].lower() == 'sum'):
+                    i += 2
+                    if statement[i] in agg_cols.keys():
+                        if agg_cols[statement[i]] == statement[i-2].lower():
+                            i += 2
+                        else:
+                            return "Błędne użycie w klauzuli Having"
+                    else:
+                        return "Błęne użycie w klauzuli Having"
+
+                if statement[i] == 'and' or statement[i] == 'or':
+                    substatement = statement[i_p:i]
+                    logic.append(statement[i])
+
+                    if substatement[0].lower() == 'count' or substatement[0].lower() == 'avg' or substatement[0].lower() == 'sum' or substatement[0].lower() == 'min' or substatement[0].lower() == 'max':
+                        i += 3
+                        col_pod = substatement[2]
+                        try:
+                            substatement[5] = float(substatement[5])
+                        except:
+                            if table[substatement[2]].dtype == 'object':
+                                pass
+                            else:
+                                return "Operacja arytmetyczna na błędnym typie"
+                    else:
+                        col_pod = substatement[0]
+                        try:
+                            substatement[2] = float(substatement[2])
+                        except:
+                            if table[substatement[0]].dtype == 'object':
+                                pass
+                            else:
+                                return "Operacja arytmetyczna na błędnym typie"
+                    try:
+                        f = table[col_pod]
+                    except:
+                        return "Błędnie dobrane kolumny w klauzuli having";
+                    if substatement[-2] == '<':
+                        df_table.append(table[table[col_pod] < substatement[-1]])
+                    elif substatement[-2] == '<=':
+                        df_table.append(table[table[col_pod] <= substatement[-1]])
+                    elif substatement[-2] == '>':
+                        df_table.append(table[table[col_pod] > substatement[-1]])
+                    elif substatement[-2] == '>=':
+                        df_table.append(table[table[col_pod] >= substatement[-1]])
+                    elif substatement[-2] == '=':
+                        df_table.append(table[table[col_pod] == substatement[-1]])
+                    i_p = i + 1
+                i += 1
+
+            if statement[i] == ';':
+                substatement = statement[i_p:i]
+                logic.append(statement[i])
+                if substatement[0].lower() == 'count' or substatement[0].lower() == 'avg' \
+                        or substatement[0].lower() == 'sum' or substatement[0].lower() == 'min' \
+                        or substatement[0].lower() == 'max':
+                    col_pod = substatement[2]
+                    try:
+                        substatement[5] = float(substatement[5])
+                    except:
+                        if table[substatement[2]].dtype == 'object':
+                            pass
+                        else:
+                            return "Operacja arytmetyczna na błędnym typie"
+                else:
+                    col_pod = substatement[0]
+                    try:
+                        substatement[2] = float(substatement[2])
+                    except:
+                        if table[substatement[0]].dtype == 'object':
+                            pass
+                        else:
+                            return "Operacja arytmetyczna na błędnym typie"
+                try:
+                    f = table[col_pod]
+                except:
+                    return "Błędnie dobrane kolumny w klauzuli having";
+                if substatement[-2] == '<':
+                    df_table.append(table[table[col_pod] < substatement[-1]])
+                elif substatement[-2] == '<=':
+                    df_table.append(table[table[col_pod] <= substatement[-1]])
+                elif substatement[-2] == '>':
+                    df_table.append(table[table[col_pod] > substatement[-1]])
+                elif substatement[-2] == '>=':
+                    df_table.append(table[table[col_pod] >= substatement[-1]])
+                elif substatement[-2] == '=':
+                    df_table.append(table[table[col_pod] == substatement[-1]])
+
+            result_table = df_table[0]
+            count = 1
+            for element in logic:
+                if element.lower() == 'and':
+                    result_table = pd.merge(result_table, df_table[count], how='inner')
+                elif element.lower() == 'or':
+                    result_table = pd.concat([result_table, df_table[count]])
+                count += 1
+            table = result_table
+
+        if statement[i].lower() == 'order':
+            i += 2
+            while statement[i].lower() != 'limit' and statement[i] != "LIMIT" and statement[i] != ';':
+                if statement[i] == ',' or statement[i] == ')':
+                    i+=1
+                elif statement[i] == 'count' or statement[i] == 'COUNT' or statement[i] == 'avg' \
+                        or statement[i] == 'AVG' or statement[i] == 'MAX' or statement[i] == 'max' \
+                        or statement[i] == 'MIN' or statement[i] == 'min' or statement[i] == 'SUM' or statement[i] == 'sum':
+                    i+=2
+                else:
+                    try:
+                        f = table[statement[i]]
+                        if order is None:
+                            order = []
+                        order.append(statement[i])
+                        i += 1
+                    except:
+                        return "Błędna kolumna w klauzuli order by"
+
         if statement[i] == ';':
             try:
                if star is True:
@@ -593,7 +717,10 @@ def execute_select_statement(statement):
                            if coalesce[col].startswith('\'') or coalesce[col].startswith('\"'):
                                coalesce[col] = coalesce[col][1:len(coalesce[col])-1]
                            selected_columns.loc[:, col] = selected_columns[col].fillna(coalesce[col])
-
+                   if order is not None:
+                        selected_columns = selected_columns.sort_values(by=order)
+                   if distinct:
+                       selected_columns = selected_columns.drop_duplicates()
             except:
                return "Błędne nazwy kolumn"  
             return selected_columns
@@ -700,7 +827,8 @@ def execute_drop_statement(statement):
         return f"Invalid DROP operation."
 
 # Przykładowe zapytania
-select_query = parser.parse("select name,avg(priority) from database3 group by name;")
+#select_query = parser.parse("select comment_id, name from database3 order by name;")
+#select_query = parser.parse("select name, count(comment_id) from database3 group by name having name = alice;")
 #select_query = parser.parse("select coalesce(name, 'name') from database3 left join database2 on database3.name = database2.name where comment_id > 2;")
 #insert_query = parser.parse("INSERT INTO table (Name, Age) VALUES ('John', 30);")
 #update_query = parser.parse("UPDATE table SET Age = 35 WHERE Name = 'John';")
