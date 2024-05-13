@@ -3,7 +3,6 @@ from grammar import *
 import pandas as pd
 import os
 
-# Funkcja do zapisu danych do pliku
 
 def flatten(lst):
     flat_list = []
@@ -20,11 +19,13 @@ def save_data_to_file(data):
             f.write(','.join([str(value) for value in row.values()]) + '\n')
 
 
-# Funkcja do odczytu danych z pliku
 def read_data_from_file(path):
     data = pd.read_csv(path)
     return data
 
+
+def write_data_to_file(df, file_path):
+    df.to_csv(file_path, index=False)
 
 # Funkcja wykonująca zapytanie SELECT
 def execute_select_statement(statement):
@@ -42,7 +43,6 @@ def execute_select_statement(statement):
     order = None
     limit = 0
     i = 1
-    # data = read_data_from_file()
     while i < len(statement):
         if statement[i].lower() == 'distinct':
             distinct = True
@@ -86,7 +86,6 @@ def execute_select_statement(statement):
             table = read_data_from_file(file_path)
 
         if statement[i].lower() == 'join':
-            # print('Jestem w joinie')
             if left_table is None:
                 current_directory = os.getcwd()
                 file_path = os.path.join(current_directory, table_name + '.csv')
@@ -350,7 +349,7 @@ def execute_select_statement(statement):
                 if star is True:
                     selected_columns = table
                 else:
-                    selected_columns = table[column_names]
+                    selected_columns = table
                     if len(column_names) == 1 and len(agg_cols) == 1 and len(columns_to_group) == 0:
                         if list(agg_cols.values())[0].lower() == 'avg':
                             selected_columns = selected_columns.mean()
@@ -377,77 +376,48 @@ def execute_select_statement(statement):
                         selected_columns = selected_columns.iloc[:limit]
             except:
                 return "Błędne nazwy kolumn"
+            if isinstance(selected_columns, pd.Series):
+                selected_columns = selected_columns.to_frame()
             return selected_columns
         i += 1
 
     # Funkcja wykonująca zapytanie INSERT
-
-
 def execute_insert_statement(statement):
-    columns = statement[5]
-    values = statement[9]
-
-    data = read_data_from_file()
-
-    new_id = len(data) + 1
-    new_record = {'ID': new_id}
-    for i in range(len(columns)):
-        new_record[columns[i]] = values[i]
-
-    data.append(new_record)
-    save_data_to_file(data)
+    table_name = statement[2]
+    columns = []
+    values = []
+    table = None
+    status = False
+    i = 4
+    while i < len(statement):
+        while i < len(statement) and statement[i] != ')' and not status:
+            if statement[i] != ',':
+                columns.append(statement[i])
+            i += 1
+        status = True
+        i += 3
+        while i < len(statement) and statement[i] != ')' and status:
+            if statement[i] != ',':
+                values.append(statement[i])
+            i += 1
+        i += 1
+    #print(columns)
+    #print(values)
+    current_directory = os.getcwd()
+    file_path = os.path.join(current_directory, table_name + '.csv')
+    if not os.path.exists(file_path):
+            return "Bledna nazwa tabeli"
+    table = read_data_from_file(file_path)
+    if len(columns) != len(values):
+        return "Mismatch between column names and values"
+    
+    #new_row = dict(zip(columns, values))
+    new_data = pd.DataFrame([dict(zip(columns, values))])
+    #table = table.append(new_row, ignore_index=True)
+    table = pd.concat([table, new_data], ignore_index=True)
+    write_data_to_file(table, file_path)
+    
     return "Inserted successfully."
-
-
-# Funkcja wykonująca zapytanie UPDATE
-def execute_update_statement(statement):
-    set_list = statement[4]
-    where_clause = statement[5]
-
-    data = read_data_from_file()
-
-    for row in data:
-        if where_clause and row.get(where_clause[2]) == where_clause[4]:
-            for i in range(0, len(set_list), 3):
-                column = set_list[i]
-                new_value = set_list[i + 2]
-                row[column] = new_value
-    save_data_to_file(data)
-    return f"Updated successfully."
-
-
-# Funkcja wykonująca zapytanie DELETE
-def execute_delete_statement(statement):
-    where_clause = statement[3]
-
-    data = read_data_from_file()
-
-    if where_clause:
-        data[:] = [row for row in data if row.get(where_clause[1]) != where_clause[3]]
-    else:
-        data.clear()
-    save_data_to_file(data)
-    return f"Deleted successfully."
-
-
-# Funkcja wykonująca zapytanie ALTER
-def execute_alter_statement(statement):
-    alter_actions = statement[4]
-
-    data = read_data_from_file()
-
-    for action in alter_actions:
-        if action[1] == 'ADD':
-            # Obsługa dodawania kolumny
-            column_name = action[3]
-            data[:] = [{**row, column_name: None} for row in data]
-        elif action[1] == 'DROP':
-            # Obsługa usuwania kolumny
-            column_name = action[3]
-            for row in data:
-                row.pop(column_name, None)
-    save_data_to_file(data)
-    return f"Altered successfully."
 
 
 # Funkcja wykonująca zapytanie CREATE
@@ -461,7 +431,7 @@ def execute_create_statement(statement):
         while statement[i] != ',' and (statement[i:i+2] != [')',';']):
             i += 1
         substatement = statement[i_p:i]
-        print(substatement)
+        #print(substatement)
         col_name = substatement[0]
         if substatement[1].lower() == 'int':
             df[col_name] = pd.Series(dtype=int)
@@ -475,12 +445,6 @@ def execute_create_statement(statement):
             df[col_name] = df[col_name].str.slice(0, 255)
             constraint_list = substatement[5:]
 
-        # j = 0
-        # while j < len(constraint_list):
-        #     if constraint_list[j] == 'not' or constraint_list[j] == "NOT":
-        #         j += 2
-        #
-
         i+=1
         i_p = i
 
@@ -489,54 +453,45 @@ def execute_create_statement(statement):
     return f"Table {table_name} created successfully."
 
 
-# Funkcja wykonująca zapytanie DROP
-def execute_drop_statement(statement):
-    object_type = statement[1]
-    object_name = statement[3]
 
-    if object_type == 'TABLE':
-        # Obsługa usuwania tabeli
-        save_data_to_file([])
-        return f"Table {object_name} dropped successfully."
-    elif object_type == 'COLUMN':
-        # Obsługa usuwania kolumny - można zaimplementować w razie potrzeby
-        pass
-    else:
-        return f"Invalid DROP operation."
-
-
-parser = yacc.yacc()
 # Przykładowe zapytania
-create_query = parser.parse("create table database4 (id int, name varchar(5));")
-#select_query = parser.parse("select comment_id, name from database3 order by name limit 2;")
+# create_query = parser.parse("create table database4 (id int, name varchar(5));")
+# select_query = parser.parse("select comment_id, name from database3 order by name limit 2;")
 # select_query = parser.parse("select comment_id, name from database3 order by name;")
 # select_query = parser.parse("select name, count(comment_id) from database3 group by name having name = alice;")
 # select_query = parser.parse("select coalesce(name, 'name') from database3 left join database2 on database3.name = database2.name where comment_id > 2;")
-# insert_query = parser.parse("INSERT INTO table (Name, Age) VALUES ('John', 30);")
-# update_query = parser.parse("UPDATE table SET Age = 35 WHERE Name = 'John';")
-# delete_query = parser.parse("DELETE FROM table WHERE Name = 'John';")
-# alter_query = parser.parse("ALTER TABLE table ADD COLUMN new_column INT;")
-# create_query = parser.parse("CREATE TABLE new_table (ID INT, Name VARCHAR);")
-# drop_query = parser.parse("DROP TABLE table;")
+# select_query = parser.parse("select distinct coalesce(name, 'name') from database3 left join database2 on database3.name = database2.name where comment_id > 2;")
+# select_query = parser.parse("select priority from database3 order by comment_id limit 3;")
+# select_query = parser.parse("select priority from database3 order by comment_id;")
+# select_query= parser.parse("select count(name) from database3;")
+# insert_query= parser.parse("INSERT INTO database3 (comment_id, name, priority) VALUES (30, kasia, 29);")
 
+def return_results(my_query):
+    queries = my_query.split(';')  
+    results = []
+    for i, query in enumerate(queries):
+        query = query.strip()  
+        if i < len(queries) - 1: 
+            query += ';'
+        if query:
+            parser = yacc.yacc()
+            select_query = parser.parse(query)
+            select_query = flatten(select_query)
+            try:
+                result = execute_select_statement(select_query)
+            except:
+                try:
+                    result = execute_create_statement(select_query)
+                except:
+                    try:
+                        result = execute_insert_statement(select_query)
+                    except:                      
+                        return "Błędny typ zapytania"                           
+            results.append(result)
+    return results
 
-create_query = flatten(create_query)
-print(create_query)
+#results = return_results("select priority from database3 order by comment_id;")
+#for result in results:
+#    print(result)
 
-# Wykonanie zapytań
-#select_result = execute_select_statement(select_query)
-# insert_result = execute_insert_statement(insert_query)
-# update_result = execute_update_statement(update_query)
-# delete_result = execute_delete_statement(delete_query)
-# alter_result = execute_alter_statement(alter_query)
-create_result = execute_create_statement(create_query)
-# drop_result = execute_drop_statement(drop_query)
-
-# Wyświetlenie wyników
-print(create_result)
-# print("INSERT result:", insert_result)
-# print("UPDATE result:", update_result)
-# print("DELETE result:", delete_result)
-# print("ALTER result:", alter_result)
-# print("CREATE result:", create_result)
-# print("DROP result:", drop_result)
+    

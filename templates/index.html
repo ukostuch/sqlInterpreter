@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Interpreter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .sidebar {
+            flex: 1;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            flex: 2;
+            padding: 20px;
+        }
+
+        .sidebar h1, .main-content h1 {
+            color: red;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .sidebar ul li a:hover {
+            color: red;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border: 2px solid white; 
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #555;
+            color: white; 
+        }
+
+        th {
+            background-color: #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #444;
+        }
+
+        tr:hover {
+            background-color: #666;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Tables</h1>
+            <ul>
+                {% for table_name, _ in csv_data.items() %}
+                    <li><a href="#{{ table_name }}">{{ table_name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <h1>SQL Interpreter</h1>
+            <form action="/execute" method="post">
+                <label for="command">Enter SQL command:</label>
+                <input type="text" id="command" name="command" size="50">
+                <input type="submit" value="Execute">
+            </form>
+            {% for result in results %}
+                {% if result is string %}
+                    <h2>Message:</h2>
+                    <p>{{ result }}</p>
+                {% elif result.empty %}
+                    <p>No results to display.</p>
+                {% else %}
+                    <h2>Result:</h2>
+                    {{ result.to_html(classes='data', header='true') | safe }}
+                {% endif %}
+            {% endfor %}
+            {% if error_message %}
+                <h2>Message:</h2>
+                <p>{{ error_message }}</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
