@@ -1,44 +1,84 @@
 # SQL Interpreter
-# Autorzy: Urszula Kostuch, Wojciech Łabędź
+
+**Autorzy:** Urszula Kostuch, Wojciech Łabędź
 
 ## Opis
-Projekt ten zawiera prosty interpreter dla języka SQL, który rozpoznaje i analizuje różne rodzaje instrukcji SQL. Projekt został podzielony na dwa pliki:
 
-- `my_token.py`: Zawiera definicje tokenów dla analizatora leksykalnego
-- `grammar.py`: Zawiera definicje gramatyki oraz analizatora składniowego
+Projekt ten zawiera prosty interpreter dla języka SQL, który rozpoznaje i analizuje różne rodzaje instrukcji SQL. Projekt został podzielony na cztery pliki:
+
+- **my_token.py**: Zawiera definicje tokenów dla analizatora leksykalnego.
+- **grammar.py**: Zawiera definicje gramatyki oraz analizatora składniowego.
+- **functions.py**: Zawiera implementację funkcji do wykonywania instrukcji SQL.
+- **app.py**: Zawiera interfejs graficzny oparty na Flasku, umożliwiający użytkownikowi interakcję z interpreterem SQL przez przeglądarkę.
 
 ## Wymagania
+
 Aby uruchomić ten projekt, wymagane jest środowisko Python 3 oraz biblioteka Ply (Python Lex-Yacc).
 
 ## Instalacja
+
 1. Pobierz zawartość repozytorium na swój lokalny komputer.
-2. Upewnij się, że masz zainstalowanego Pythona 3
+2. Upewnij się, że masz zainstalowanego Pythona 3.
 3. Zainstaluj bibliotekę Ply, jeśli nie masz jej jeszcze zainstalowanej:
-   
-pip install ply
+
+    ```bash
+    pip install ply
+    ```
+
+4. Zainstaluj dodatkowe wymagania:
+
+    ```bash
+    pip install flask pandas
+    ```
 
 ## Uruchamianie
-1. Upewnij się, że oba pliki `my_token.py` i `grammar.py` są w tym samym katalogu.
-2. Uruchom plik `grammar.py` za pomocą Pythona:
 
-python grammar.py
+Upewnij się, że wszystkie pliki `my_token.py`, `grammar.py`, `functions.py`, i `app.py` są w tym samym katalogu.
+
+1. Uruchom aplikację Flask:
+
+    ```bash
+    python app.py
+    ```
+
+2. Otwórz przeglądarkę i przejdź do adresu:
+
+    ```
+    http://127.0.0.1:5000/
+    ```
 
 ## Użycie
-Uruchom `grammar.py` po ustawieniu zawartości zmiennej 'results' przechowującej instrukcje SQL do analizy. 
-Program wyświetli zidentyfikowane tokeny oraz wynik analizy składniowej.
+
+1. Uruchom `app.py`, aby wyświetlić interfejs graficzny w przeglądarce.
+2. W interfejsie graficznym możesz wprowadzać zapytania SQL w celu analizy plików CSV.
 
 ## Przykładowe zapytania SQL
+
 Poniżej znajdują się przykładowe zapytania SQL, które możesz użyć do testowania parsera:
 
-- `SELECT id, name FROM users WHERE id = 1 AND age > 18 ORDER BY name ASC LIMIT 10;`
-- `INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2, value3);`
-- `UPDATE table_name SET column1 = value1, column2 = value2 WHERE condition;`
-- `DELETE FROM table_name WHERE x>y;`
-- `CREATE TABLE table_name (column1 datatype, column2 datatype, column3 datatype);`
-- `ALTER TABLE table_name ADD COLUMN column_name int;`
-- `DROP TABLE table_name;`
-- `SELECT column1 FROM table1 UNION SELECT column1 FROM table2;`
-- `SELECT column1 FROM table1 UNION ALL SELECT column1 FROM table2;`
-- `SELECT column1 FROM table1 INTERSECT SELECT column1 FROM table2;`
-- `SELECT column1 FROM table1 EXCEPT SELECT column1 FROM table2;`
+```sql
+select coalesce(name,'brak') from database2;
+select name from database2;
 
+select comment_id, name from database3 order by name;
+
+select comment_id, name from database3 order by name limit 2;
+
+select name, count(comment_id) from database3 group by name;
+select name, count(comment_id) from database3 group by name having name = alice;
+
+select name from database3 left join database2 on database3.name = database2.name where comment_id > 2;
+select distinct name from database3 left join database2 on database3.name = database2.name where comment_id > 2;
+
+
+select comment_id,priority from database3 order by priority;
+select comment_id,priority from database3 order by priority limit 3;
+
+select name,avg(comment_id) from database3 group by name;
+
+select count(name) from database3;
+
+
+create table database5 (id int, name varchar(5));
+insert into database5 (id,name) values (2,kasia);
+select * from database5;
