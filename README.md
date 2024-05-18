@@ -82,3 +82,5 @@ select count(name) from database3;
 create table database5 (id int, name varchar(5));
 insert into database5 (id,name) values (2,kasia);
 select * from database5;
+
+delete from database4 where name = alice;

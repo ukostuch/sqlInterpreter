@@ -476,13 +476,197 @@ def execute_drop_statement(statement):
 
 
 # Funkcja wykonująca zapytanie UPDATE
+# Funkcja wykonująca zapytanie UPDATE
 def execute_update_statement(statement):
-    return 0
+    table_name = statement[1]
+    set_index = statement.index('set') + 1
+    where_index = statement.index('where') + 1 if 'where' in statement else len(statement)
+
+    updates = statement[set_index:where_index-1]
+    conditions = statement[where_index:] if 'where' in statement else []
+
+    # Process the columns and values to be updated
+    update_columns = []
+    update_values = []
+    i = 0
+    while i < len(updates):
+        if updates[i] != ',':
+            update_columns.append(updates[i])
+            update_values.append(updates[i + 2])
+            i += 3
+        else:
+            i += 1
+
+    current_directory = os.getcwd()
+    file_path = os.path.join(current_directory, table_name + '.csv')
+    if not os.path.exists(file_path):
+        return "Bledna nazwa tabeli"
+    table = read_data_from_file(file_path)
+
+    # Apply the updates based on conditions
+    if conditions:
+        logic = []
+        df_table = []
+        i = 0
+        i_p = 0
+        while i < len(conditions):
+            if conditions[i] == 'and' or conditions[i] == 'or':
+                substatement = conditions[i_p:i]
+                logic.append(conditions[i])
+                try:
+                    substatement[2] = float(substatement[2])
+                except:
+                    if table[substatement[0]].dtype == 'object':
+                        pass
+                    else:
+                        return "Operacja arytmetyczna na błędnym typie"
+                if substatement[1] == '<':
+                    df_table.append(table[table[substatement[0]] < substatement[2]])
+                elif substatement[1] == '<=':
+                    df_table.append(table[table[substatement[0]] <= substatement[2]])
+                elif substatement[1] == '>':
+                    df_table.append(table[table[substatement[0]] > substatement[2]])
+                elif substatement[1] == '>=':
+                    df_table.append(table[table[substatement[0]] >= substatement[2]])
+                elif substatement[1] == '=':
+                    df_table.append(table[table[substatement[0]] == substatement[2]])
+                i_p = i + 1
+            i += 1
+
+        if conditions[i-1] == ';':
+            substatement = conditions[i_p:i-1]
+        else:
+            substatement = conditions[i_p:i]
+
+        try:
+            substatement[2] = float(substatement[2])
+        except:
+            if table[substatement[0]].dtype == 'object':
+                pass
+            else:
+                return "Operacja arytmetyczna na błędnym typie"
+        if substatement[1] == '<':
+            df_table.append(table[table[substatement[0]] < substatement[2]])
+        elif substatement[1] == '<=':
+            df_table.append(table[table[substatement[0]] <= substatement[2]])
+        elif substatement[1] == '>':
+            df_table.append(table[table[substatement[0]] > substatement[2]])
+        elif substatement[1] == '>=':
+            df_table.append(table[table[substatement[0]] >= substatement[2]])
+        elif substatement[1] == '=':
+            df_table.append(table[table[substatement[0]] == substatement[2]])
+
+        result_table = df_table[0]
+        count = 1
+        for element in logic:
+            if element.lower() == 'and':
+                result_table = pd.merge(result_table, df_table[count], how='inner')
+            elif element.lower() == 'or':
+                result_table = pd.concat([result_table, df_table[count]])
+            count += 1
+
+        # Update the rows in the result_table
+        for col, val in zip(update_columns, update_values):
+            result_table[col] = val
+
+        # Merge the updated rows back into the original table
+        updated_table = table.copy()
+        updated_table.update(result_table)
+    else:
+        # Update all rows in the table
+        for col, val in zip(update_columns, update_values):
+            table[col] = val
+        updated_table = table
+
+    # Save the updated table back to the CSV file
+    write_data_to_file(updated_table, file_path)
+    return "Updated successfully."
 
 
 # Funkcja wykonująca zapytanie DELETE
+# Funkcja wykonująca zapytanie DELETE
 def execute_delete_statement(statement):
-    return 0
+    table_name = statement[2]
+    conditions = statement[4:]
+
+    current_directory = os.getcwd()
+    file_path = os.path.join(current_directory, table_name + '.csv')
+    if not os.path.exists(file_path):
+        return "Bledna nazwa tabeli"
+    table = read_data_from_file(file_path)
+    print(conditions)
+
+    if conditions:
+        logic = []
+        df_table = []
+        i = 0
+        i_p = 0
+        while i < len(conditions):
+            if conditions[i] == 'and' or conditions[i] == 'or':
+                substatement = conditions[i_p:i]
+                print(substatement)
+                logic.append(conditions[i])
+                try:
+                    substatement[2] = float(substatement[2])
+                except:
+                    if table[substatement[0]].dtype == 'object':
+                        pass
+                    else:
+                        return "Operacja arytmetyczna na błędnym typie"
+                if substatement[1] == '<':
+                    df_table.append(table[table[substatement[0]] < substatement[2]])
+                elif substatement[1] == '<=':
+                    df_table.append(table[table[substatement[0]] <= substatement[2]])
+                elif substatement[1] == '>':
+                    df_table.append(table[table[substatement[0]] > substatement[2]])
+                elif substatement[1] == '>=':
+                    df_table.append(table[table[substatement[0]] >= substatement[2]])
+                elif substatement[1] == '=':
+                    df_table.append(table[table[substatement[0]] == substatement[2]])
+                i_p = i + 1
+            i += 1
+
+        if conditions[i-1] == ';':
+            substatement = conditions[i_p:i-1]
+        else:
+            substatement = conditions[i_p:i]
+
+        try:
+            substatement[2] = float(substatement[2])
+        except:
+            if table[substatement[0]].dtype == 'object':
+                pass
+            else:
+                return "Operacja arytmetyczna na błędnym typie"
+        if substatement[1] == '<':
+            df_table.append(table[table[substatement[0]] < substatement[2]])
+        elif substatement[1] == '<=':
+            df_table.append(table[table[substatement[0]] <= substatement[2]])
+        elif substatement[1] == '>':
+            df_table.append(table[table[substatement[0]] > substatement[2]])
+        elif substatement[1] == '>=':
+            df_table.append(table[table[substatement[0]] >= substatement[2]])
+        elif substatement[1] == '=':
+            df_table.append(table[table[substatement[0]] == substatement[2]])
+
+        result_table = df_table[0]
+        count = 1
+        for element in logic:
+            if element.lower() == 'and':
+                result_table = pd.merge(result_table, df_table[count], how='inner')
+            elif element.lower() == 'or':
+                result_table = pd.concat([result_table, df_table[count]])
+            count += 1
+
+        # Delete rows that match the conditions
+        table = table.drop(result_table.index)
+    else:
+        # Delete all rows in the table
+        table = pd.DataFrame(columns=table.columns)
+    # Save the updated table back to the CSV file
+    write_data_to_file(table, file_path)
+    return "Deleted successfully."
+
     
 
 
