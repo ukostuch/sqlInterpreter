@@ -331,7 +331,7 @@ def p_drop_statement(p):
 def p_error(p):
     if p:
         print(p)
-        error_message = f"Błąd składniowy w wierszu {p.lineno}, w pobliżu '{p.value}'"
+        error_message = f"Błąd składniowy na pozycji {p.lexpos}, w pobliżu '{p.value}'"
         raise SyntaxError(error_message)
     else:
         raise SyntaxError("Błąd składniowy - brak średnika na końcu zapytania")
