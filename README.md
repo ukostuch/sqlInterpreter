@@ -84,3 +84,4 @@ insert into database5 (id,name) values (2,kasia);
 select * from database5;
 
 delete from database4 where name = alice;
+update database2 set name = vlad where age < 10;
