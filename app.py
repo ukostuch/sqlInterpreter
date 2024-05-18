@@ -34,7 +34,6 @@ def execute():
 
     try:
         results = return_results(command)
-
         return render_template('index.html', results=results, csv_data=csv_data)
     
     except Exception as e:

@@ -54,14 +54,14 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            border: 2px solid white; 
+            border: 2px solid white;
         }
 
         th, td {
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid #555;
-            color: white; 
+            color: white;
         }
 
         th {
@@ -79,6 +79,10 @@
         .error {
             color: red;
         }
+
+        textarea {
+            font-family: "Arial", Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -95,8 +99,8 @@
         <div class="main-content">
             <h1>SQL Interpreter</h1>
             <form action="/execute" method="post">
-                <label for="command">Enter SQL command:</label>
-                <input type="text" id="command" name="command" size="50">
+                <label for="command">Enter SQL command:</label><br>
+                <textarea id="command" name="command" rows="8" cols="50"></textarea><br>
                 <input type="submit" value="Execute">
             </form>
             {% for result in results %}

@@ -348,9 +348,16 @@ def execute_select_statement(statement):
             try:
                 if star is True:
                     selected_columns = table
+                    if order is not None:
+                        selected_columns = selected_columns.sort_values(by=order)
+                    if distinct:
+                        selected_columns = selected_columns.drop_duplicates()
+                    if limit != 0:
+                        selected_columns = selected_columns.iloc[:limit]
                 else:
                     selected_columns = table
                     if len(column_names) == 1 and len(agg_cols) == 1 and len(columns_to_group) == 0:
+                        selected_columns = table[column_names]
                         if list(agg_cols.values())[0].lower() == 'avg':
                             selected_columns = selected_columns.mean()
                         elif list(agg_cols.values())[0].lower() == 'sum':
@@ -370,6 +377,7 @@ def execute_select_statement(statement):
                             selected_columns.loc[:, col] = selected_columns[col].fillna(coalesce[col])
                     if order is not None:
                         selected_columns = selected_columns.sort_values(by=order)
+                    selected_columns = selected_columns[column_names]
                     if distinct:
                         selected_columns = selected_columns.drop_duplicates()
                     if limit != 0:
@@ -448,7 +456,7 @@ def execute_create_statement(statement):
         i+=1
         i_p = i
 
-    df.to_csv(os.path.join(table_name+'.csv'))
+    df.to_csv(os.path.join(table_name+'.csv'),index=False)
 
     return f"Table {table_name} created successfully."
 
@@ -470,24 +478,27 @@ def return_results(my_query):
     queries = my_query.split(';')  
     results = []
     for i, query in enumerate(queries):
-        query = query.strip()  
+        query = query.strip()
+        parser = yacc.yacc()
         if i < len(queries) - 1: 
             query += ';'
         if query:
-            parser = yacc.yacc()
-            select_query = parser.parse(query)
-            select_query = flatten(select_query)
             try:
-                result = execute_select_statement(select_query)
-            except:
+                select_query = parser.parse(query)
+                select_query = flatten(select_query)
                 try:
-                    result = execute_create_statement(select_query)
+                    result = execute_select_statement(select_query)
                 except:
                     try:
-                        result = execute_insert_statement(select_query)
-                    except:                      
-                        return "Błędny typ zapytania"                           
-            results.append(result)
+                        result = execute_create_statement(select_query)
+                    except:
+                        try:
+                            result = execute_insert_statement(select_query)
+                        except:
+                            return "Błędny typ zapytania"
+                results.append(result)
+            except SyntaxError as e:
+                results.append(e.__str__())
     return results
 
 #results = return_results("select priority from database3 order by comment_id;")

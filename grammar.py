@@ -332,7 +332,11 @@ def p_drop_statement(p):
     p[0] = p[1:]
 
 def p_error(p):
-    print("Syntax error in input!")
+    if p:
+        error_message = f"Błąd składniowy w wierszu {p.lineno}, w pobliżu '{p.value}'"
+        raise SyntaxError(error_message)
+    else:
+        raise SyntaxError("Błąd składniowy: nieoczekiwany koniec wejścia")
 
 #budowanie parsera
 parser = yacc.yacc()
