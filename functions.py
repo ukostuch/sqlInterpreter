@@ -462,6 +462,63 @@ def execute_create_statement(statement):
 
 
 
+# Funkcja wykonująca zapytanie DROP
+def execute_drop_statement(statement):
+    table_name = statement[2]
+    file = table_name + '.csv'
+    if(os.path.exists(file) and os.path.isfile(file)): 
+        os.remove(file) 
+        return f"Table {table_name} deleted"
+    else: 
+        return "Table not found"
+
+
+
+
+# Funkcja wykonująca zapytanie UPDATE
+def execute_update_statement(statement):
+    return 0
+
+
+# Funkcja wykonująca zapytanie DELETE
+def execute_delete_statement(statement):
+    return 0
+    
+
+
+
+# Funkcja wykonująca zapytanie ALTER #bez constraint
+def execute_alter_statement(statement):
+    table_name = statement[2]
+
+    current_directory = os.getcwd()
+    file_path = os.path.join(current_directory, table_name + '.csv')
+    if not os.path.exists(file_path):
+            return "Bledna nazwa tabeli"
+    table = read_data_from_file(file_path)
+
+    if statement[3].lower() == 'drop' and statement[4].lower() == 'column':
+        column_name = statement[5]
+        table.drop(column_name, inplace=True, axis=1)
+        write_data_to_file(table, file_path)
+        return f"Column {column_name} dropped successfully."
+    if statement[3].lower() == 'add' and statement[4].lower() == 'column':
+        #constraint_list=[]
+        col_name = statement[5]
+        if statement[6].lower() == 'int':
+            table[col_name] = pd.Series(dtype=int)
+            #constraint_list = statement[7:]
+        elif statement[6].lower() == 'float':
+            table[col_name] = pd.Series(dtype=float)
+            table[col_name] = table[col_name].round(statement[8])
+            #constraint_list = statement[10:]
+        elif statement[6].lower() == 'varchar':
+            table[col_name] = pd.Series(dtype=str)
+            table[col_name] = table[col_name].str.slice(0, 255)
+            #constraint_list = statement[10:]
+        write_data_to_file(table, file_path)
+        return f"Column {col_name} added successfully."
+
 # Przykładowe zapytania
 # create_query = parser.parse("create table database4 (id int, name varchar(5));")
 # select_query = parser.parse("select comment_id, name from database3 order by name limit 2;")
@@ -473,36 +530,40 @@ def execute_create_statement(statement):
 # select_query = parser.parse("select priority from database3 order by comment_id;")
 # select_query= parser.parse("select count(name) from database3;")
 # insert_query= parser.parse("INSERT INTO database3 (comment_id, name, priority) VALUES (30, kasia, 29);")
+# ALTER TABLE database4 ADD COLUMN email varchar(255);
+# ALTER TABLE database4 drop column email;
 
 def return_results(my_query):
     queries = my_query.split(';')  
     results = []
     for i, query in enumerate(queries):
-        query = query.strip()
-        parser = yacc.yacc()
+        query = query.strip()  
         if i < len(queries) - 1: 
             query += ';'
         if query:
-            try:
-                select_query = parser.parse(query)
-                select_query = flatten(select_query)
-                try:
-                    result = execute_select_statement(select_query)
-                except:
-                    try:
-                        result = execute_create_statement(select_query)
-                    except:
-                        try:
-                            result = execute_insert_statement(select_query)
-                        except:
-                            return "Błędny typ zapytania"
-                results.append(result)
-            except SyntaxError as e:
-                results.append(e.__str__())
+            parser = yacc.yacc()
+            select_query = parser.parse(query)
+            select_query = flatten(select_query)
+
+            if select_query[0] =='select' or select_query[0]=="SELECT":
+                result = execute_select_statement(select_query)
+            elif select_query[0]=='drop' or select_query[0]=='DROP':
+                result = execute_drop_statement(select_query)
+            elif select_query[0]=='insert' or select_query[0]=='INSERT': 
+                result = execute_insert_statement(select_query)
+            elif select_query[0]=='update' or select_query[0]=='UPDATE':
+                result = execute_update_statement(select_query)
+            elif select_query[0]=='alter' or select_query[0]=='ALTER':
+                result = execute_alter_statement(select_query)   
+            elif select_query[0]=='delete' or select_query[0]=='DELETE':
+                result = execute_delete_statement(select_query)
+            elif select_query[0]=='create' or select_query[0]=='CREATE':                   
+                result = execute_create_statement(select_query)
+            else:
+                return "Błędny typ zapytania"                           
+            results.append(result)
     return results
 
 #results = return_results("select priority from database3 order by comment_id;")
 #for result in results:
 #    print(result)
-
-    

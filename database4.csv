@@ -1,5 +1,10 @@
-id,name,priority,Address,City,PostalCode,Country
-'Cardinal','10','Skagen 21','Stavanger','4006','Norway',
-'Cardinal','10','Skagen 21','Stavanger','4006','Norway',
-'Cardinal','10','Skagen 21','Stavanger','4006','Norway',
-'Adam','20','Aldona 21','Porto','1','Portugal',
+comment_id,name,email
+1,john_doe,
+2,jane_doe,
+3,alice,
+4,mark,
+5,john_doe,
+6,maria,
+7,alice,
+30,kasia,
+30,kasia,

@@ -312,9 +312,7 @@ def p_alter_actions(p):
 
 def p_alter_action(p):
     '''alter_action : ADD COLUMN column_def
-                    | ADD CONSTRAINT ID constraint_def
-                    | DROP COLUMN ID
-                    | DROP CONSTRAINT ID'''
+                    | DROP COLUMN ID'''
     p[0] = p[1:]
 
 
@@ -327,16 +325,16 @@ def p_constraint_def(p):
     p[0] = p[1:]
 
 def p_drop_statement(p):
-    '''drop_statement : DROP TABLE ID SEMICOLON
-                      | DROP COLUMN ID DOT ID SEMICOLON'''
+    '''drop_statement : DROP TABLE ID SEMICOLON'''
     p[0] = p[1:]
 
 def p_error(p):
     if p:
+        print(p)
         error_message = f"Błąd składniowy w wierszu {p.lineno}, w pobliżu '{p.value}'"
         raise SyntaxError(error_message)
     else:
-        raise SyntaxError("Błąd składniowy: nieoczekiwany koniec wejścia")
+        raise SyntaxError("Błąd składniowy - brak średnika na końcu zapytania")
 
 #budowanie parsera
 parser = yacc.yacc()
